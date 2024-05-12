@@ -51,17 +51,21 @@ No missing values
 Adjusting the date format to enable inner joining
 
 ```{r}
-power_consumption %>% mutate(Datetime = format(strptime(Datetime, "%m/%d/%Y %H:%M"), "%Y-%m-%dT%H:00")) -> power_date_converted
+power_consumption %>% mutate(Datetime = 
+format(strptime(Datetime, "%m/%d/%Y %H:%M"), "%Y-%m-%dT%H:00")) -> 
+power_date_converted
 ```
 
 ```{r}
 head(power_date_converted)
 ```
 
-We can see that duplicate datetime values have been created due to the rounding of minutes. Let's take the mean values of each hour
+We can see that duplicate datetime values have been created due to the 
+rounding of minutes. Let's take the mean values of each hour
 
 ```{r}
-power_date_converted %>% group_by(Datetime) %>% summarise(across(everything(), mean)) -> power_mean
+power_date_converted %>% 
+group_by(Datetime) %>% summarise(across(everything(), mean)) -> power_mean
 ```
 
 ```{r}
@@ -78,7 +82,8 @@ joined_data <- inner_join(power_mean, weather, by = c("Datetime" = "time"))
 head(joined_data)
 ```
 
-Let's study the correlations between the power consumption values and weather conditions 
+Let's study the correlations between the power consumption values 
+and weather conditions 
 
 ```{r}
 names(joined_data)
@@ -91,7 +96,8 @@ check_correlation <- function(data, i1, i2, i3, i4) {
       correlation <- cor(data[[x]], data[[y]], method = "spearman")
       if (is.na(correlation)) next
       if (abs(correlation) >= 0.50) {
-        cat(sprintf("Correlation of %f between %s and %s.\n", correlation, x, y))
+        cat(sprintf("Correlation of %f between %s and %s.\n", 
+        correlation, x, y))
         next
       }
     }
@@ -103,22 +109,27 @@ check_correlation <- function(data, i1, i2, i3, i4) {
 check_correlation(joined_data, 2, 6, 7, 26)
 ```
 
-Conclusion 1: General diffuse flows seem to be influenced by the evapotranspiration, vapour pressure deficits,
-temperature and relative humidity
+Conclusion 1: General diffuse flows seem to be influenced by the 
+evapotranspiration, vapour pressure deficits,temperature and relative humidity
 
-Conclusion 2: Diffuse flows seem to be influenced by the evapotranspiration rate and vapour pressure deficits
+Conclusion 2: Diffuse flows seem to be influenced by the evapotranspiration rate 
+and vapour pressure deficits
 
 Due to more and stronger correlations we will focus on general diffuse flows
 
 ```{r}
-joined_data %>% select(GDF = GeneralDiffuseFlows, ET = et0_fao_evapotranspiration..mm., VPD = vapour_pressure_deficit..kPa., TEMP = temperature_2m...C., HUM = relative_humidity_2m....) -> correlated_data
+joined_data %>% select(GDF = GeneralDiffuseFlows, 
+ET = et0_fao_evapotranspiration..mm., 
+VPD = vapour_pressure_deficit..kPa., TEMP = temperature_2m...C., 
+HUM = relative_humidity_2m....) -> correlated_data
 ```
 
 ```{r}
 head(correlated_data)
 ```
 
-Creating new features to find new correlations and strengthen the existing ones (VPD, TEMP, HUM)
+Creating new features to find new correlations and strengthen the existing ones 
+(that is: VPD, TEMP, HUM)
 
 ```{r}
 new_features <- correlated_data %>%
@@ -203,8 +214,10 @@ Studying the influence of outliers on the correlation
 ```{r}
 check_correlation_by_delta <- function(delta, i1, i2, i3, i4) {
   
-  lower <- lapply(correlated_data2[2:3], function(x) quantile(x, probs = 0.00 + delta / 100))
-  upper <- lapply(correlated_data2[2:3], function(x) quantile(x, probs = 1.00 - delta / 100))
+  lower <- lapply(correlated_data2[2:3], 
+  function(x) quantile(x, probs = 0.00 + delta / 100))
+  upper <- lapply(correlated_data2[2:3], 
+  function(x) quantile(x, probs = 1.00 - delta / 100))
   data <- correlated_data2
   
   for (x in names(lower)) {
@@ -234,7 +247,8 @@ min_max <- function(data) {
 ```
 
 ```{r}
-correlated_data2 %>% mutate(GDF = min_max(GDF), ET = min_max(ET), GDF_prev = min_max(GDF_prev), DF_prev = min_max(DF_prev)) -> normalised_data
+correlated_data2 %>% mutate(GDF = min_max(GDF), ET = min_max(ET), 
+GDF_prev = min_max(GDF_prev), DF_prev = min_max(DF_prev)) -> normalised_data
 ```
 
 ```{r}
@@ -244,25 +258,39 @@ head(normalised_data)
 Plotting the data
 
 ```{r}
-plot1 <- ggplot(normalised_data, aes(x = ET, y = GDF)) + geom_point(size = 0.5, color = "blue") + labs(title = "y = GDF(ET)", x ="ET", y = "GDF") + theme_minimal()
+plot1 <- ggplot(normalised_data, aes(x = ET, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(ET)", x ="ET", y = "GDF") + 
+theme_minimal()
 print(plot1)
 ```
 
 ```{r}
-plot2 <- ggplot(normalised_data, aes(x = GDF_prev, y = GDF)) + geom_point(size = 0.5, color = "blue") + labs(title = "y = GDF(GDF_prev)", x ="GDF_prev", y = "GDF") + theme_minimal()
+plot2 <- ggplot(normalised_data, aes(x = GDF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(GDF_prev)", x ="GDF_prev", y = "GDF") + 
+theme_minimal()
 print(plot2)
 ```
 
 ```{r}
-plot3 <- ggplot(normalised_data, aes(x = DF_prev, y = GDF)) + geom_point(size = 0.5, color = "blue") + labs(title = "y = GDF(DF_prev)", x ="DF_prev", y = "GDF") + theme_minimal()
+plot3 <- ggplot(normalised_data, aes(x = DF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(DF_prev)", x ="DF_prev", y = "GDF") + 
+theme_minimal()
 print(plot3)
 ```
 
-The data is clustered, therefore we will try the following: random forest regressor, gradient boosting, k-nearest neighbours regressor and support vector regressor.
+The data is clustered, therefore we will try the following: 
+random forest regressor, gradient boosting, k-nearest neighbours regressor 
+and support vector regressor.
 First we must save the data to a csv file and switch to Python
 
 ```{r}
-normalised_data %>% mutate(GDF = format(GDF, scientific = FALSE), ET = format(ET, scientific = FALSE), GDF_prev = format(GDF_prev, scientific = FALSE), DF_prev = format(DF_prev, scientific = FALSE)) -> data_to_save
+normalised_data %>% mutate(GDF = format(GDF, scientific = FALSE), 
+ET = format(ET, scientific = FALSE), 
+GDF_prev = format(GDF_prev, scientific = FALSE), 
+DF_prev = format(DF_prev, scientific = FALSE)) -> data_to_save
 ```
 
 ```{r}
@@ -307,7 +335,8 @@ Feature.head()
 Splitting data into training and testing sets
 
 ```{python}
-X_train, X_test, y_train, y_test = train_test_split(Feature, Target, test_size = 0.2, random_state = 666)
+X_train, X_test, y_train, y_test = train_test_split(Feature, Target, 
+test_size = 0.2, random_state = 666)
 ```
 
 Training models
@@ -357,10 +386,11 @@ print(f'SupportVectorRegressor MSE: {sv_mse}')
 print(f'SupportVectorRegressor R2: {sv_r2}')
 ```
 
-KNeighborsRegressor, GradientBoostingRegressor, RandomForestRegressor are similarly accurate
-and SupportVectorRegressor is less accurate than the former three.
-The GradientBoostingRegressor proved to be most accurate with a slight upperhand. 
-Let's train it again with more n_estimators
+KNeighborsRegressor, GradientBoostingRegressor, RandomForestRegressor are 
+similarly accurateand SupportVectorRegressor is less accurate than 
+the former three.
+The GradientBoostingRegressor proved to be most accurate with a 
+slight upperhand. Let's train it again with more n_estimators
 
 ```{python}
 final_model = GradientBoostingRegressor(n_estimators = 1000, random_state = 666)
@@ -374,7 +404,8 @@ Now let's create a scatter plot to demonstrate the results
 def plot_predictions(y_true, y_pred, title, fname):
   plt.figure(figsize=(8, 8))
   plt.scatter(y_true, y_pred, alpha = 0.5)
-  plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], "r--", lw = 2)
+  plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], "r--", 
+  lw = 2)
   plt.xlabel("True (normalised) values")
   plt.ylabel("Predicted (normalised) values")
   plt.title(title)
@@ -382,7 +413,8 @@ def plot_predictions(y_true, y_pred, title, fname):
 ```
 
 ```{python}
-plot_predictions(y_test, final_predictions, "GDF predictions accuracy", "GDFPredictions")
+plot_predictions(y_test, final_predictions, "GDF predictions accuracy", 
+"GDFPredictions")
 ```
 
 Displaying the image in RNotebook
