@@ -7,10 +7,10 @@
 wyodrebnij(
   df,
   name = "Date",
-  what = "\%H",
+  what = c("\%H"),
   from = "\%d-\%m-\%Y \%H:\%M:\%S",
   new = TRUE,
-  newName = "Hour"
+  newName = c("Hour")
 )
 }
 \arguments{

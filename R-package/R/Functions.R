@@ -59,21 +59,45 @@ unormuj <- function(df, which = c(2, length(colnames(df))), check = TRUE, decima
 #' @return Zwraca ramkę z kolumną z wyodrębnioną częścią daty.
 #' @export
 
-wyodrebnij <- function(df,name = "Date", what= "%H", from="%d-%m-%Y %H:%M:%S",  new = TRUE, newName ="Hour"){
+wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S",  new = TRUE, newName =c("Hour")){
   if (!new){
+    for (x in 1:length(what)){
     suppressWarnings(
-    df [,name] <- format(as.POSIXct(df[,name],from),what)
+    df [,name] <- as.numeric(format(as.POSIXct(df[,name],from),what[x]))
     )
+    }
     
   }
   else{
+    for (x in 1:length(what)){
     suppressWarnings(
-    kol <-  format(as.POSIXct(df[,name],from),what)
+    kol <-  as.numeric(format(as.POSIXct(df[,name],from),what[x]))
     )
     df<-cbind(df,kol)
-    colnames(df)[length(colnames(df))] <- newName
+    colnames(df)[length(colnames(df))] <- newName[x]
+    }
     df    
   }
 }
+
+#' Sprawdzenie korelacji x kolumn względem y kolumn
+#'
+#' Sprawdza korelacje pomiędzy podanymi kolumnanmi
+#' @param df Nasza ramka danych.
+#' @param whichx Numery kolumn  
+#' @param whichy Numery 2 typu kolumn
+#' @param method Metoda liczenia korelacji. Tak samo jak w funkcji bazowej cor.
+#' 
+#' @return Zwraca współczynnik korelacji dla podanych par kolumn
+#' @export
+correlation <- function(df,whichx,whichy, method="spearman"){
+  for (x in whichx){
+    for (y in whichy){
+      cat("Sprawdzam", x, "i", y, "\n")
+      print(cor(df[,whichx],df[,whichy], method = method))
+    }
+  }
+}
+
 
 
