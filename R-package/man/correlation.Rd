@@ -4,7 +4,7 @@
 \alias{correlation}
 \title{Sprawdzenie korelacji x kolumn względem y kolumn}
 \usage{
-correlation(df, whichx, whichy, method = "spearman")
+correlation(df, whichx, whichy, method = "spearman", high = 0.01)
 }
 \arguments{
 \item{df}{Nasza ramka danych.}
@@ -14,6 +14,8 @@ correlation(df, whichx, whichy, method = "spearman")
 \item{whichy}{Numery 2 typu kolumn}
 
 \item{method}{Metoda liczenia korelacji. Tak samo jak w funkcji bazowej cor.}
+
+\item{high}{wartość współczynnika od jakiej mamy wypisywać pary na konsole}
 }
 \value{
 Zwraca współczynnik korelacji dla podanych par kolumn

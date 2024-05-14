@@ -1,5 +1,5 @@
 #' Zmiana typu czasu.
-#'
+#' 
 #' Zmienia format czasu z x na y.
 #' @param df Nasza ramka danych.
 #' @param namesFrom Kolumna, w której posiadamy date. Domyślnie "Date".
@@ -63,15 +63,16 @@ wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S"
   if (!new){
     for (x in 1:length(what)){
     suppressWarnings(
-    df [,name] <- as.numeric(format(as.POSIXct(df[,name],from),what[x]))
+    df [,name] <- sprintf("%02d", as.numeric(format(as.POSIXct(df[,name],from),what[x])))
     )
+    
     }
     
   }
   else{
     for (x in 1:length(what)){
     suppressWarnings(
-    kol <-  as.numeric(format(as.POSIXct(df[,name],from),what[x]))
+    kol <- sprintf("%02d", as.numeric(format(as.POSIXct(df[,name],from),what[x])))
     )
     df<-cbind(df,kol)
     colnames(df)[length(colnames(df))] <- newName[x]
@@ -87,17 +88,19 @@ wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S"
 #' @param whichx Numery kolumn  
 #' @param whichy Numery 2 typu kolumn
 #' @param method Metoda liczenia korelacji. Tak samo jak w funkcji bazowej cor.
-#' 
+#' @param high wartość współczynnika od jakiej mamy wypisywać pary na konsole
 #' @return Zwraca współczynnik korelacji dla podanych par kolumn
 #' @export
-correlation <- function(df,whichx,whichy, method="spearman"){
-  for (x in whichx){
-    for (y in whichy){
-      cat("Sprawdzam", x, "i", y, "\n")
-      print(cor(df[,whichx],df[,whichy], method = method))
+correlation <- function(df,whichx,whichy, method="spearman", high=0.01){
+  for (x in 1:length(whichx)){
+    for (y in 1:length(whichy)){
+      suppressWarnings(
+      z<-cor(df[,whichx[x]],df[,whichy[y]], method = method)
+      )
+      if (!is.na(z) &abs(z) >= high){
+      cat("Sprawdzam", whichx[x], "i", whichy[y], "\n")
+      print(z)
+      }
     }
   }
 }
-
-
-
