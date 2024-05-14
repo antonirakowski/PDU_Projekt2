@@ -1,0 +1,426 @@
+---
+title: "Tetouan Power Consumption Prediction Model"
+author: "Antoni Rakowski"
+output: pdf_document
+---
+
+In this notebook we will evaluate two data sets:
+
+1. A data set containing weather conditions from Tetouan from 2017
+
+2. A data set containing power consumption information from
+the same time and place
+
+Then we will train appropriate ML models
+
+Loading necessary data and libraries
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(png)
+library(grid)
+weather <- read.csv("TetouanWeather2017.csv", skip = 3)
+power_consumption <- read.csv("TetouanPowerConsumption2017.csv")
+```
+
+Inspecting power consumption data for its structure and missing values 
+
+```{r}
+head(power_consumption)
+```
+
+```{r}
+summary(power_consumption)
+```
+
+No missing values
+
+Inspecting weather data for its structure and missing values 
+
+```{r}
+head(weather)
+```
+
+```{r}
+summary(weather)
+```
+
+No missing values
+
+Adjusting the date format to enable inner joining
+
+```{r}
+power_consumption %>% mutate(Datetime = 
+format(strptime(Datetime, "%m/%d/%Y %H:%M"), "%Y-%m-%dT%H:00")) -> 
+power_date_converted
+```
+
+```{r}
+head(power_date_converted)
+```
+
+We can see that duplicate datetime values have been created due to the 
+rounding of minutes. Let's take the mean values of each hour
+
+```{r}
+power_date_converted %>% 
+group_by(Datetime) %>% summarise(across(everything(), mean)) -> power_mean
+```
+
+```{r}
+head(power_mean)
+```
+
+Inner joining the weather and power data
+
+```{r}
+joined_data <- inner_join(power_mean, weather, by = c("Datetime" = "time"))
+```
+
+```{r}
+head(joined_data)
+```
+
+Let's study the correlations between the power consumption values 
+and weather conditions 
+
+```{r}
+names(joined_data)
+```
+
+```{r}
+check_correlation <- function(data, i1, i2, i3, i4) {
+  for (x in names(data)[i1:i2]) {
+    for (y in names(data)[i3:i4]) {
+      correlation <- cor(data[[x]], data[[y]], method = "spearman")
+      if (is.na(correlation)) next
+      if (abs(correlation) >= 0.50) {
+        cat(sprintf("Correlation of %f between %s and %s.\n", 
+        correlation, x, y))
+        next
+      }
+    }
+  }
+}
+```
+
+```{r}
+check_correlation(joined_data, 2, 6, 7, 26)
+```
+
+Conclusion 1: General diffuse flows seem to be influenced by the 
+evapotranspiration, vapour pressure deficits,temperature and relative humidity
+
+Conclusion 2: Diffuse flows seem to be influenced by the evapotranspiration rate 
+and vapour pressure deficits
+
+Due to more and stronger correlations we will focus on general diffuse flows
+
+```{r}
+joined_data %>% select(GDF = GeneralDiffuseFlows, 
+ET = et0_fao_evapotranspiration..mm., 
+VPD = vapour_pressure_deficit..kPa., TEMP = temperature_2m...C., 
+HUM = relative_humidity_2m....) -> correlated_data
+```
+
+```{r}
+head(correlated_data)
+```
+
+Creating new features to find new correlations and strengthen the existing ones 
+(that is: VPD, TEMP, HUM)
+
+```{r}
+new_features <- correlated_data %>%
+  mutate(
+    # Sum of two features
+    VPD_TEMP_sum = VPD + TEMP,
+    VPD_HUM_sum = VPD + HUM,
+    TEMP_HUM_sum = TEMP + HUM,
+    
+    # Difference of two features
+    VPD_TEMP_diff = VPD - TEMP,
+    VPD_HUM_diff = VPD - HUM,
+    TEMP_HUM_diff = TEMP - HUM,
+    
+    # Product of two features
+    VPD_TEMP_product = VPD * TEMP,
+    VPD_HUM_product = VPD * HUM,
+    TEMP_HUM_product = TEMP * HUM,
+    
+    # Ratio of two features (adding a small constant to avoid division by 0)
+    VPD_TEMP_ratio = VPD / (TEMP + 1e-6),
+    VPD_HUM_ratio = VPD / (HUM + 1e-6),
+    TEMP_HUM_ratio = TEMP / (HUM + 1e-6),
+    
+    # Sum of all three features
+    all_three_sum = VPD + TEMP + HUM,
+    
+    # Difference between the sum of two features and the third feature
+    VPD_TEMP_sum_minus_HUM = (VPD + TEMP) - HUM,
+    VPD_HUM_sum_minus_TEMP = (VPD + HUM) - TEMP,
+    TEMP_HUM_sum_minus_VPD = (TEMP + HUM) - VPD,
+    
+    # Product of all three features
+    all_three_product = VPD * TEMP * HUM,
+    
+    # Average of two features
+    VPD_TEMP_average = (VPD + TEMP) / 2,
+    VPD_HUM_average = (VPD + HUM) / 2,
+    TEMP_HUM_average = (TEMP + HUM) / 2,
+    
+    # Square of a feature
+    VPD_square = VPD * VPD,
+    TEMP_square = TEMP * TEMP,
+    HUM_square = HUM * HUM,
+    
+    # Interaction term (adding a small constant to avoid division by 0)
+    VPD_TEMP_interaction = (VPD * TEMP) / (HUM + 1e-6),
+    VPD_HUM_interaction = (VPD * HUM) / (TEMP + 1e-6),
+    TEMP_HUM_interaction = (TEMP * HUM) / (VPD + 1e-6),
+    
+    # Data from previous hour
+    GDF_prev = lag(GDF, 1), 
+    DF_prev = lag(joined_data$DiffuseFlows, 1)
+  ) %>% slice(-1)
+```
+
+```{r}
+head(new_features)
+```
+
+```{r}
+names(new_features)
+```
+
+```{r}
+check_correlation(new_features, 1, 1, 3,33)
+```
+The correlation between GDF and values from the previous hour is strong,
+but VPD, HUM, TEMP and their derivatives are insufficiently correlated.
+Thus, we will use ET, GDF_prev and DF_prev to predict GDF.
+
+```{r}
+new_features %>% select(GDF, ET, GDF_prev, DF_prev) -> correlated_data2
+```
+
+```{r}
+head(correlated_data2)
+```
+
+Studying the influence of outliers on the correlation
+
+```{r}
+check_correlation_by_delta <- function(delta, i1, i2, i3, i4) {
+  
+  lower <- lapply(correlated_data2[2:3], 
+  function(x) quantile(x, probs = 0.00 + delta / 100))
+  upper <- lapply(correlated_data2[2:3], 
+  function(x) quantile(x, probs = 1.00 - delta / 100))
+  data <- correlated_data2
+  
+  for (x in names(lower)) {
+    data <- data %>% filter(data[[x]] >= lower[[x]] & data[[x]] <= upper[[x]])
+  }
+  
+  cat(sprintf("Delta = %d\n", delta))
+  
+  check_correlation(data, i1, i2, i3, i4)
+  
+  cat("\n")
+}
+```
+
+```{r}
+for (delta in 0:5) check_correlation_by_delta(delta, 1, 1, 2, 3)
+```
+
+The effect of outliers is marginal, but slightly negative. Hence, we will
+not remove outliers.
+Let's normalise the data on account of plotting and fitting ML algorithms
+
+```{r}
+min_max <- function(data) {
+  (data - min(data)) / (max(data) - min(data))
+}
+```
+
+```{r}
+correlated_data2 %>% mutate(GDF = min_max(GDF), ET = min_max(ET), 
+GDF_prev = min_max(GDF_prev), DF_prev = min_max(DF_prev)) -> normalised_data
+```
+
+```{r}
+head(normalised_data)
+```
+
+Plotting the data
+
+```{r}
+plot1 <- ggplot(normalised_data, aes(x = ET, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(ET)", x ="ET", y = "GDF") + 
+theme_minimal()
+print(plot1)
+```
+
+```{r}
+plot2 <- ggplot(normalised_data, aes(x = GDF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(GDF_prev)", x ="GDF_prev", y = "GDF") + 
+theme_minimal()
+print(plot2)
+```
+
+```{r}
+plot3 <- ggplot(normalised_data, aes(x = DF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(DF_prev)", x ="DF_prev", y = "GDF") + 
+theme_minimal()
+print(plot3)
+```
+
+The data is clustered, therefore we will try the following: 
+random forest regressor, gradient boosting, k-nearest neighbours regressor 
+and support vector regressor.
+First we must save the data to a csv file and switch to Python
+
+```{r}
+normalised_data %>% mutate(GDF = format(GDF, scientific = FALSE), 
+ET = format(ET, scientific = FALSE), 
+GDF_prev = format(GDF_prev, scientific = FALSE), 
+DF_prev = format(DF_prev, scientific = FALSE)) -> data_to_save
+```
+
+```{r}
+head(data_to_save)
+```
+
+```{r}
+write.csv(data_to_save, "NormalisedData.csv", row.names = FALSE)
+```
+
+Switching to Python and importing necessary libraries
+
+```{python}
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
+from sklearn.model_selection import train_test_split 
+from sklearn.metrics import mean_squared_error, r2_score
+import pandas as pd 
+import matplotlib.pyplot as plt
+```
+
+Loading the data into a Panda's dataframe
+
+```{python}
+data = pd.read_csv("NormalisedData.csv", header = 0)
+data.head()
+```
+
+Creating features and targets
+
+```{python}
+Target = data[["GDF"]].values.ravel()
+Target
+```
+
+```{python}
+Feature = data[["ET", "GDF_prev", "DF_prev"]]
+Feature.head()
+```
+
+Splitting data into training and testing sets
+
+```{python}
+X_train, X_test, y_train, y_test = train_test_split(Feature, Target, 
+test_size = 0.2, random_state = 666)
+```
+
+Training models
+
+```{python}
+knn_regressor = KNeighborsRegressor(n_neighbors = 5)
+knn_regressor.fit(X_train, y_train)
+knn_predictions = knn_regressor.predict(X_test)
+
+gb_regressor = GradientBoostingRegressor(n_estimators = 100, random_state = 666)
+gb_regressor.fit(X_train, y_train)
+gb_predictions = gb_regressor.predict(X_test)
+
+rf_regressor = RandomForestRegressor(n_estimators = 100, random_state = 666)
+rf_regressor.fit(X_train, y_train)
+rf_predictions = rf_regressor.predict(X_test)
+
+sv_regressor = SVR(kernel="rbf")
+sv_regressor.fit(X_train, y_train)
+sv_predictions = sv_regressor.predict(X_test)
+```
+
+Evaluating models
+
+```{python}
+knn_mse = mean_squared_error(y_test, knn_predictions)
+knn_r2 = r2_score(y_test, knn_predictions)
+print(f'KNeighborsRegressor MSE: {knn_mse}')
+print(f'KNeighborsRegressor R2: {knn_r2}')
+print()
+
+gb_mse = mean_squared_error(y_test, gb_predictions)
+gb_r2 = r2_score(y_test, gb_predictions)
+print(f'GradientBoostingRegressor MSE: {gb_mse}')
+print(f'GradientBoostingRegressor R2: {gb_r2}')
+print()
+
+rf_mse = mean_squared_error(y_test, rf_predictions)
+rf_r2 = r2_score(y_test, rf_predictions)
+print(f'RandomForestRegressor MSE: {rf_mse}')
+print(f'RandomForestRegressor R2: {rf_r2}')
+print()
+
+sv_mse = mean_squared_error(y_test, sv_predictions)
+sv_r2 = r2_score(y_test, sv_predictions)
+print(f'SupportVectorRegressor MSE: {sv_mse}')
+print(f'SupportVectorRegressor R2: {sv_r2}')
+```
+
+KNeighborsRegressor, GradientBoostingRegressor, RandomForestRegressor are 
+similarly accurateand SupportVectorRegressor is less accurate than 
+the former three.
+The GradientBoostingRegressor proved to be most accurate with a 
+slight upperhand. Let's train it again with more n_estimators
+
+```{python}
+final_model = GradientBoostingRegressor(n_estimators = 1000, random_state = 666)
+final_model.fit(X_train, y_train)
+final_predictions = final_model.predict(X_test)
+```
+
+Now let's create a scatter plot to demonstrate the results
+
+```{python}
+def plot_predictions(y_true, y_pred, title, fname):
+  plt.figure(figsize=(8, 8))
+  plt.scatter(y_true, y_pred, alpha = 0.5)
+  plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], "r--", 
+  lw = 2)
+  plt.xlabel("True (normalised) values")
+  plt.ylabel("Predicted (normalised) values")
+  plt.title(title)
+  plt.savefig(fname)
+```
+
+```{python}
+plot_predictions(y_test, final_predictions, "GDF predictions accuracy", 
+"GDFPredictions")
+```
+
+Displaying the image in RNotebook
+
+```{r}
+img <- readPNG("GDFPredictions.png")
+grid.newpage()
+grid.raster(img)
+```
