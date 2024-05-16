@@ -1,6 +1,7 @@
 ---
 title: "Rowery Waszyngton"
-output: html_notebook
+author: "Michał Syrkiewicz"
+output: pdf_document
 ---
 Loading used libraries. Devtools used to load "R-package" my own small package made for this assignment
 
