@@ -18,6 +18,7 @@ help(correlation)
 ```
 
 Reading and saving quarterly data from Washington bikes
+All needed csv-s in zip folder.
 ```{r}
 Q1 <- read.csv("2013Q1-capitalbikeshare-tripdata.csv")
 Q2 <- read.csv("2013Q2-capitalbikeshare-tripdata.csv")
