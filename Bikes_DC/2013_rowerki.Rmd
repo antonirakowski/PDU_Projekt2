@@ -3,7 +3,7 @@ title: "Rowery Waszyngton"
 author: "Michał Syrkiewicz"
 output: pdf_document
 ---
-Loading used libraries. Devtools used to load "R-package" my own small package made for this assignment
+Loading used libraries. Devtools used to load "R-package" my own small package made for this assignment. "R-package" needs to be present in project folder in order to work.
 
 ```{r}
 library(dplyr)
