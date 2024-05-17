@@ -1,0 +1,236 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+#Cleanup
+rm(list=ls())
+gc()
+#Preperaing the data
+library(dplyr)
+
+# Weather from chicago between 2000 and 2024 hourly
+weather <- read.csv("weather_chicago_2001_2023.csv")
+
+# Crimes from Chicago, from 2001 to 2023
+crimes <- read.csv("crimes_chicago.csv")
+
+# Deleting unnesessary columns from crimes (location etc.)
+crimes[,c(13:22)] <- NULL
+
+# Creating usefull columns, then join
+crimes <- crimes %>%
+  mutate(Date = format(as.POSIXct(Date, format = "%m/%d/%Y %I:%M:%S %p"), "%Y-%m-%dT%H:%M:%S"),
+         Hour = round((as.integer(substr(Date, 12, 13)) * 3600 +
+                         as.integer(substr(Date, 15, 16)) * 60 +
+                         as.integer(substr(Date, 18, 19))) %/% 3600), #rouding time to just hour to match weather$time
+         Date = sprintf("%sT%02d%s",substr(Date, 1, 10), Hour, ":00")) %>% 
+  right_join(weather, by = join_by(Date==time))
+# right join, because for now it's better to keep the days when no crime happens
+```
+
+
+```{r}
+# Differet types of crimes should be analised separately
+
+count_list <- list()
+for(i in unique(crimes$Primary.Type)){
+  count_list[[i]] <- sum(crimes$Primary.Type == i, na.rm=TRUE)
+}
+count_list_sorted <- count_list[order(unlist(count_list), decreasing = TRUE)]
+types <- names(count_list_sorted)
+counts <- unlist(count_list_sorted)
+# Create a bar plot
+
+barplot(counts, names.arg = types, las = 2, col = ifelse(counts<mean(counts),"red","skyblue"),
+        main = "Counts of Crime Types", xlab = "Crime Types", ylab = "Count")
+
+```
+
+
+```{r}
+#plotting for each crime type
+
+crime_types <- names(count_list_sorted)[1:20]
+
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
+cut_min <- 0.05
+cut_max <- 1
+
+for(crimeType in crime_types){
+  df <- crimes %>%
+    mutate(Date = number_of_day_in_year %/% 14) %>%
+    filter(Primary.Type == crimeType) %>%
+    group_by(Date)%>%
+    summarise(mean_temp = mean(temperature_2m...C.),
+              mean_wind = mean(wind_speed_10m..km.h.),
+              mean_precipitation = mean(precipitation..mm.),
+              mean_cloud = mean(cloud_cover....),
+              count = n()) %>%
+    filter(between(count, quantile(count, c(cut_min, cut_max))[[1]],quantile(count, c(cut_min, cut_max))[[2]])) %>%
+    filter(between(mean_temp, quantile(mean_temp, c(cut_min, cut_max))[[1]],quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+  
+  var_cor <- df$mean_temp
+  
+  title <- sprintf("crime type: %s rows: %d cor = %f", 
+                   crimeType, dim(df)[1], cor(var_cor, df$count, method = "pearson"))
+  print(title)
+  if(dim(df)[1]!=0){
+    plot(var_cor, df$count,las=2, main = title, type="p", pch=16, col=rgb(0,0,0,0.3))
+    #plot(df$Date, df$count, main = paste(crimeType,"in year"), type="l", pch=16, col=rgb(0,0,0,0.3))
+  }
+}
+```
+
+Testing NARCOTICS
+
+```{r}
+
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
+cut_min <- 0.05
+cut_max <- 0.95
+
+crimeType <- "NARCOTICS"
+
+library(stringr)
+
+crimes <- crimes %>%
+  mutate(Description = case_when(
+    Primary.Type == crimeType & str_detect(Description, "POSS") ~ "POSSESS",
+    Primary.Type == crimeType & (str_detect(Description, "DELIVER") | str_detect(Description, "MANU")) ~ "MANU/DELIVER",
+    TRUE ~ Description
+  ))
+
+df_Possess <- crimes %>%
+    mutate(Date = number_of_day_in_year %/% 7) %>%
+    filter(Primary.Type == crimeType) %>%
+    filter(Description == "POSSESS") %>%
+    group_by(Date)%>%
+    summarise(mean_temp = mean(temperature_2m...C.),
+              mean_wind = mean(wind_speed_10m..km.h.),
+              mean_precipitation = mean(precipitation..mm.),
+              mean_cloud = mean(cloud_cover....),
+              count = n()) %>%
+    filter(between(count, 
+                   quantile(count, c(cut_min, cut_max))[[1]], 
+                   quantile(count, c(cut_min, cut_max))[[2]])) %>%
+    filter(between(mean_temp, 
+                   quantile(mean_temp, c(cut_min, cut_max))[[1]],
+                   quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+
+df_ManuDeliver <- crimes %>%
+    mutate(Date = number_of_day_in_year %/% 7) %>%
+    filter(Primary.Type == crimeType) %>%
+    filter(Description == "MANU/DELIVER") %>%
+    group_by(Date)%>%
+    summarise(mean_temp = mean(temperature_2m...C.),
+              mean_wind = mean(wind_speed_10m..km.h.),
+              mean_precipitation = mean(precipitation..mm.),
+              mean_cloud = mean(cloud_cover....),
+              count = n()) %>%
+    filter(between(count, 
+                   quantile(count, c(cut_min, cut_max))[[1]], 
+                   quantile(count, c(cut_min, cut_max))[[2]])) %>%
+    filter(between(mean_temp, 
+                   quantile(mean_temp, c(cut_min, cut_max))[[1]],
+                   quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+
+df_Other <- crimes %>%
+    mutate(Date = number_of_day_in_year %/% 7) %>%
+    filter(Primary.Type == crimeType) %>%
+    filter(Description != "MANU/DELIVER" & Description != "POSSESS") %>%
+    group_by(Date)%>%
+    summarise(mean_temp = mean(temperature_2m...C.),
+              mean_wind = mean(wind_speed_10m..km.h.),
+              mean_precipitation = mean(precipitation..mm.),
+              mean_cloud = mean(cloud_cover....),
+              count = n()) %>%
+    filter(between(count, 
+                   quantile(count, c(cut_min, cut_max))[[1]], 
+                   quantile(count, c(cut_min, cut_max))[[2]])) %>%
+    filter(between(mean_temp, 
+                   quantile(mean_temp, c(cut_min, cut_max))[[1]],
+                   quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+
+title <- sprintf("Different NARCOTICS crimes cor1 = %f cor2 = %f cor3 = %f", 
+                 cor(df_Possess$mean_temp, df_Possess$count, method = "pearson"),
+                 cor(df_ManuDeliver$mean_temp, df_ManuDeliver$count, method = "pearson"),
+                 cor(df_Other$mean_temp, df_Other$count, method = "pearson"))
+
+print(title)
+
+
+
+plot(df_Possess$mean_temp, df_Possess$count, main = title, type="p", pch=16, col=rgb(1,0,0,1))
+#lines(df_Possess$mean_temp, df_ManuDeliver$count, main = title, type="p", pch=16, col=rgb(0,0,1,1))
+#lines(df_Possess$mean_temp, df_Other$count, main = title, type="p", pch=16, col=rgb(0,1,0,1))
+
+# do poprawy?
+#ggplot(data.frame(df_Possess$count, df_ManuDeliver$count, df_Possess$Date))
+```
+
+
+
+Testing HOMICIDEs
+
+```{r}
+
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
+cut_min <- 0
+cut_max <- 1
+
+crimeType <- "HOMICIDE"
+
+#library(stringr)
+
+print(unique(unlist(crimes %>% filter(Primary.Type == crimeType) %>% select(Description))))
+
+crimes %>% filter(Primary.Type == crimeType) %>% select(Description)
+
+df_Homicide <- crimes %>%
+    mutate(Date = number_of_day_in_year %/% 31) %>%
+    filter(Primary.Type == crimeType) %>%
+    filter(Description == "FIRST DEGREE MURDER") %>%
+    group_by(Date)%>%
+    summarise(mean_temp = mean(temperature_2m...C.),
+              mean_wind = mean(wind_speed_10m..km.h.),
+              mean_precipitation = mean(precipitation..mm.),
+              mean_cloud = mean(cloud_cover....),
+              count = n()) %>%
+    filter(between(count, 
+                   quantile(count, c(cut_min, cut_max))[[1]], 
+                   quantile(count, c(cut_min, cut_max))[[2]])) %>%
+    filter(between(mean_temp, 
+                   quantile(mean_temp, c(cut_min, cut_max))[[1]],
+                   quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+
+normalise <- function(x){
+  (x-min(x))/(max(x)-min(x))
+}
+
+lapply(df_Homicide, normalise)
+
+title <- sprintf("crime type: %s : %s rows: %d cor = %f", 
+                   crimeType, "FIRST DEGREE MURDER", dim(df)[1], 
+                 cor(df$mean_temp, df$count, method = "pearson"))
+print(title)
+
+  plot(df$mean_temp, df$count, las=2, main = title, type="p", pch=16, col=rgb(0,0,0,0.3))
+
+```
+
+
+```{r}
+check <- crimes %>% mutate(Date = as.POSIXlt(substr(Date,1, 10), format = "%Y-%m-%d")$yday) %>%
+  filter(!is.na(Case.Number)) %>%
+  group_by(Date) %>%
+  summarise(n = n()) %>%
+  filter(n<20)
+
+max(check$Date)
+min(check$n)
+dim(check)
+plot(check$Date, check$n, main = "weird days", type="p", pch=16, col=rgb(0,0,0,0.5))
+```
+
