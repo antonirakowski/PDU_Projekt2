@@ -41,3 +41,6 @@ This is generic function. Use to change format of time.
 \references{
 Gagolewski M. (2024), Deep R Programming, Melbourne
 }
+\seealso{
+[wyodrebnij()] for extracting specific data from date.
+}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/Functions.R
 \name{wyodrebnij}
 \alias{wyodrebnij}
-\title{Wyodrebnienie czesci daty.}
+\title{Extract given date part}
 \usage{
 wyodrebnij(
   df,
@@ -14,21 +14,35 @@ wyodrebnij(
 )
 }
 \arguments{
-\item{df}{Nasza ramka danych.}
+\item{df}{Main data frame}
 
-\item{name}{Nazwa kolumny z datą. Domyślnie "Date".}
+\item{name}{Name of column with date.Default "Date".}
 
-\item{what}{Którą część daty chcemy wyodrębnić.}
+\item{what}{Part of date to be extracted .}
 
-\item{from}{Format daty w  kolumnie poczatkowej.}
+\item{from}{Format of date in name column.}
 
-\item{new}{Czy tworzymy nową kolumne, czy nadpisujemy starą.}
+\item{new}{Boolean, if FALSE name column will be overwriten.}
 
-\item{newName}{Nazwa stworzonej kolumny.}
+\item{newName}{Name of new column.}
 }
 \value{
-Zwraca ramkę z kolumną z wyodrębnioną częścią daty.
+Returns data frame with extracted parts of date.
 }
 \description{
-Wyodrebnia podana czesc daty i tworzy badz nie nowa kolumne.
+Extracting given part of date and making new column with those values.
+}
+\details{
+Length of what and newName vector must be the same in order to make function work properly.
+Use only when date format is the same across all column.
+Changing "new" parameter is not recommended.
+}
+\examples{
+  #Extracting month from date and making new column
+  wyodrebnij(df, what=c("\%m"), newName=c("Month"))
+  #Extracting multiple data
+  wyodrebnij(df, name="Time", what=c("H","m"), newName=c("Hour","Month"))
+}
+\references{
+Gagolewski M. (2024), Deep R Programming, Melbourne
 }

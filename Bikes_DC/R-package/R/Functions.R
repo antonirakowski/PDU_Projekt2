@@ -14,6 +14,7 @@
 #' @details This is generic function. Use to change format of time. 
 #'   Remember to carefully copy existing format to from parameter to avoid getting all NA in column.
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
+#' @seealso [wyodrebnij()] for extracting specific data from date.
 #' @export
 
 czas <- function(df,nameFrom="Date",nameTo=nameFrom, from ="%Y-%m-%d %H:%M:%S" , to ="%d-%m-%Y %H:%M:%S" ){
@@ -44,7 +45,7 @@ df
 #'  
 #' @details
 #' Function in default does not normalise 1 column even if numeric. If you are using which parameter remember to change check to FALSE.
-#' 
+
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
 #' @export
 
@@ -81,7 +82,7 @@ unormuj <- function(df, which = c(2, length(colnames(df))), check = TRUE, decima
 #' 
 #' @examples 
 #'   #Extracting month from date and making new column
-#'   wyodrebnij(df, what=c("%m), newName=c("Month"))
+#'   wyodrebnij(df, what=c("%m"), newName=c("Month"))
 #'   #Extracting multiple data
 #'   wyodrebnij(df, name="Time", what=c("H","m"), newName=c("Hour","Month"))
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
@@ -117,18 +118,26 @@ wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S"
 #' @param whichy Numbers of columns y
 #' @param method Method of calcukating correlation. Names are the same as in cor function in base R.
 #' @param high Value of minimum correlation from which the number will start to appear in console. 
+#' @param ... Any other parameters from "cor" function in base R
 #' @return Prints number of columns and value of correlation of columns which surpass "parameter" value.
-#' 
+#' @details
+#' Whichx and whichy must be given. "High" parameter is working on absolutes do not give him negative values.
+#' Format of print might be odd for some of you, but it give you all information from value of correlation,
+#' to numbers of columns which were used to product this value.
+#' @seealso [cor()]  for more details about correlations
 #' @examples
-#' 
+#' #Find correlation beetwen columns from 5 to 9 and 8 to 19 with rank higher from 0.7
+#' correlation(df,c(1:5),c(8,19),high=0.7)
+#' #Find Pearson correlation beetwen column 1 and every other. Print all of them.
+#' correlation(df, c(1), c(2:length(colnames(df))), high= 0)
 #' 
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
 #' @export
-correlation <- function(df,whichx,whichy, method="spearman", high=0.01){
+correlation <- function(df,whichx,whichy, method="spearman", high=0.01, ...){
   for (x in 1:length(whichx)){
     for (y in 1:length(whichy)){
       suppressWarnings(
-      z<-cor(df[,whichx[x]],df[,whichy[y]], method = method)
+      z<-cor(df[,whichx[x]],df[,whichy[y]], method = method, ...)
       )
       if (!is.na(z) &abs(z) >= high){
       cat("Sprawdzam", whichx[x], "i", whichy[y], "\n")

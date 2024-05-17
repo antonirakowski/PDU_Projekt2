@@ -2,24 +2,44 @@
 % Please edit documentation in R/Functions.R
 \name{correlation}
 \alias{correlation}
-\title{Sprawdzenie korelacji x kolumn względem y kolumn}
+\title{Checking correlation beetwen x and y columns}
 \usage{
-correlation(df, whichx, whichy, method = "spearman", high = 0.01)
+correlation(df, whichx, whichy, method = "spearman", high = 0.01, ...)
 }
 \arguments{
-\item{df}{Nasza ramka danych.}
+\item{df}{Main data frame}
 
-\item{whichx}{Numery kolumn}
+\item{whichx}{Numbers of columns x}
 
-\item{whichy}{Numery 2 typu kolumn}
+\item{whichy}{Numbers of columns y}
 
-\item{method}{Metoda liczenia korelacji. Tak samo jak w funkcji bazowej cor.}
+\item{method}{Method of calcukating correlation. Names are the same as in cor function in base R.}
 
-\item{high}{wartość współczynnika od jakiej mamy wypisywać pary na konsole}
+\item{high}{Value of minimum correlation from which the number will start to appear in console.}
+
+\item{...}{Any other parameters from "cor" function in base R}
 }
 \value{
-Zwraca współczynnik korelacji dla podanych par kolumn
+Prints number of columns and value of correlation of columns which surpass "parameter" value.
 }
 \description{
-Sprawdza korelacje pomiędzy podanymi kolumnanmi
+Function checks correlation beetwen given number of columns
+}
+\details{
+Whichx and whichy must be given. "High" parameter is working on absolutes do not give him negative values.
+Format of print might be odd for some of you, but it give you all information from value of correlation,
+to numbers of columns which were used to product this value.
+}
+\examples{
+#Find correlation beetwen columns from 5 to 9 and 8 to 19 with rank higher from 0.7
+correlation(df,c(1:5),c(8,19),high=0.7)
+#Find Pearson correlation beetwen column 1 and every other. Print all of them.
+correlation(df, c(1), c(2:length(colnames(df))), high= 0)
+
+}
+\references{
+Gagolewski M. (2024), Deep R Programming, Melbourne
+}
+\seealso{
+[cor()]  for more details about correlations
 }

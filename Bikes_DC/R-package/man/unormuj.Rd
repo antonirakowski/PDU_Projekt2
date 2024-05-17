@@ -22,7 +22,7 @@ Return a data frame with given columns normalised.
 Changes values of all data in given column to range <0,1>.
 }
 \details{
-Function in default does not normalise 1 column. If you are using which parameter remember to change check to FALSE.
+Function in default does not normalise 1 column even if numeric. If you are using which parameter remember to change check to FALSE.
 }
 \examples{
  #Normalise columns from 5 to 15 to 3 decimal points
