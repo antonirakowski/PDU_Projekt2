@@ -2,7 +2,7 @@
 % Please edit documentation in R/Functions.R
 \name{czas}
 \alias{czas}
-\title{Zmiana typu czasu.}
+\title{Change date format}
 \usage{
 czas(
   df,
@@ -13,19 +13,31 @@ czas(
 )
 }
 \arguments{
-\item{df}{Nasza ramka danych.}
+\item{df}{Main data frame}
 
-\item{from}{Początkowy format daty.}
+\item{from}{Start date format.}
 
-\item{to}{Końcowy format daty.}
+\item{to}{End date format.}
 
-\item{namesFrom}{Kolumna, w której posiadamy date. Domyślnie "Date".}
+\item{namesFrom}{Name of column in which we want to change date. Default "Date"}
 
-\item{namesTo}{Nazwa kolumny wyniku. Domyślnie nie zmieniamy nazwy.}
+\item{namesTo}{Name of our column at the end of process. Default we do not change name.}
 }
 \value{
-Zwraca ramkę ze zmienionym formatem danych.
+Return a data frame with changed date format and/or column name.
 }
 \description{
-Zmienia format czasu z x na y.
+Function changes format of date in column
+}
+\details{
+This is generic function. Use to change format of time. 
+  Remember to carefully copy existing format to from parameter to avoid getting all NA in column.
+}
+\examples{
+   Examples of usage with different parameters
+   czas(df, nameTo="NewDate", from="\%Y-\%d-\%m \%H:\%M:\%S",to ="\%d-\%m-\%Y \%H:\%M:\%S" )
+   czas(df, to = "\%d-\%m-\%Y")
+}
+\references{
+Gagolewski M. (2024), Deep R Programming, Melbourne
 }

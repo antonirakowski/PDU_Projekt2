@@ -2,22 +2,35 @@
 % Please edit documentation in R/Functions.R
 \name{unormuj}
 \alias{unormuj}
-\title{Normalizacja danych numerycznych.}
+\title{Normalisation of numeric data.}
 \usage{
 unormuj(df, which = c(2, length(colnames(df))), check = TRUE, decimals = 3)
 }
 \arguments{
-\item{df}{Nasza ramka danych.}
+\item{df}{Main data frame}
 
-\item{which}{Numery kolumn, w których mamy znormalizować dane.}
+\item{which}{Vector of integers. Vector with numbers of columns we want to normalise.}
 
-\item{check}{Czy sprawdzamy każdą kolumnę. Jeśli podajemy jakie kolumny zmienić na FALSE!. W przeciwnym wypadku funkcja sama znormalizuje tylko kolumny numeryczne.}
+\item{check}{Do you want to check all columns in order to find numeric ones. Function will normalise all of them..}
 
-\item{decimals}{Ile cyfr po przecnku ma mieć wynik w kolumnach.}
+\item{decimals}{Number of decimal points in columns.}
 }
 \value{
-Zwraca ramkę z znormalizowany wartościami liczbowymi.
+Return a data frame with given columns normalised.
 }
 \description{
-Zmienia wartości wszystkich lub podanych kolumn do przedziału <0,1>.
+Changes values of all data in given column to range <0,1>.
+}
+\details{
+Function in default does not normalise 1 column. If you are using which parameter remember to change check to FALSE.
+}
+\examples{
+ #Normalise columns from 5 to 15 to 3 decimal points
+ unormuj(df, c(5:15), check = FALSE)
+ #Normalise all numeric columns except 1 to 14 decimals points
+ unormuj(df, decimals = 14)
+ 
+}
+\references{
+Gagolewski M. (2024), Deep R Programming, Melbourne
 }

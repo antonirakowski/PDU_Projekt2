@@ -1,5 +1,5 @@
 ---
-title: "Rowery Waszyngton"
+title: "Washington Bikes"
 author: "Michał Syrkiewicz"
 output: pdf_document
 ---
@@ -10,6 +10,7 @@ library(dplyr)
 library(stringr)
 library(devtools)
 load_all("R-package")
+
 ```
 ```{r Helps, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 help(wyodrebnij)
@@ -151,6 +152,6 @@ plot(wynik3$casual,wynik3$Inne, xlab = "Casuals",ylab="Apparent Temperature * Ra
 
 
 ```{r CorrelationSTD}
-correlation(wynik1,c(2,3),c(4:28),high=0.75, method="spearman")
+correlation(wynik3,c(2,3),c(4:28),high=0.75, method="spearman")
 ```
 
