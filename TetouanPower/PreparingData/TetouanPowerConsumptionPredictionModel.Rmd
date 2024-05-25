@@ -18,8 +18,6 @@ Loading necessary data and libraries
 ```{r}
 library(dplyr)
 library(ggplot2)
-library(png)
-library(grid)
 weather <- read.csv("TetouanWeather2017.csv", skip = 3)
 power_consumption <- read.csv("TetouanPowerConsumption2017.csv")
 ```
@@ -247,12 +245,27 @@ min_max <- function(data) {
 ```
 
 ```{r}
+stand <- function(data) {
+  (data - mean(data)) / sd(data)
+}
+```
+
+```{r}
 correlated_data2 %>% mutate(GDF = min_max(GDF), ET = min_max(ET), 
 GDF_prev = min_max(GDF_prev), DF_prev = min_max(DF_prev)) -> normalised_data
 ```
 
 ```{r}
 head(normalised_data)
+```
+
+```{r}
+correlated_data2 %>% mutate(GDF = stand(GDF), ET = stand(ET), 
+GDF_prev = stand(GDF_prev), DF_prev = stand(DF_prev)) -> stand_data
+```
+
+```{r}
+head(stand_data)
 ```
 
 Plotting the data
@@ -266,6 +279,14 @@ print(plot1)
 ```
 
 ```{r}
+plot11 <- ggplot(stand_data, aes(x = ET, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(ET)", x ="ET", y = "GDF") + 
+theme_minimal()
+print(plot11)
+```
+
+```{r}
 plot2 <- ggplot(normalised_data, aes(x = GDF_prev, y = GDF)) + 
 geom_point(size = 0.5, color = "blue") + 
 labs(title = "y = GDF(GDF_prev)", x ="GDF_prev", y = "GDF") + 
@@ -274,11 +295,27 @@ print(plot2)
 ```
 
 ```{r}
+plot22 <- ggplot(stand_data, aes(x = GDF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(GDF_prev)", x ="GDF_prev", y = "GDF") + 
+theme_minimal()
+print(plot22)
+```
+
+```{r}
 plot3 <- ggplot(normalised_data, aes(x = DF_prev, y = GDF)) + 
 geom_point(size = 0.5, color = "blue") + 
 labs(title = "y = GDF(DF_prev)", x ="DF_prev", y = "GDF") + 
 theme_minimal()
 print(plot3)
+```
+
+```{r}
+plot33 <- ggplot(stand_data, aes(x = DF_prev, y = GDF)) + 
+geom_point(size = 0.5, color = "blue") + 
+labs(title = "y = GDF(DF_prev)", x ="DF_prev", y = "GDF") + 
+theme_minimal()
+print(plot33)
 ```
 
 The data is clustered, therefore we will try the following: 
@@ -294,133 +331,21 @@ DF_prev = format(DF_prev, scientific = FALSE)) -> data_to_save
 ```
 
 ```{r}
+stand_data %>% mutate(GDF = format(GDF, scientific = FALSE), 
+ET = format(ET, scientific = FALSE), 
+GDF_prev = format(GDF_prev, scientific = FALSE), 
+DF_prev = format(DF_prev, scientific = FALSE)) -> data_to_save2
+```
+
+```{r}
 head(data_to_save)
 ```
 
 ```{r}
-write.csv(data_to_save, "NormalisedData.csv", row.names = FALSE)
+head(data_to_save2)
 ```
-
-Switching to Python and importing necessary libraries
-
-```{python}
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.svm import SVR
-from sklearn.model_selection import train_test_split 
-from sklearn.metrics import mean_squared_error, r2_score
-import pandas as pd 
-import matplotlib.pyplot as plt
-```
-
-Loading the data into a Panda's dataframe
-
-```{python}
-data = pd.read_csv("NormalisedData.csv", header = 0)
-data.head()
-```
-
-Creating features and targets
-
-```{python}
-Target = data[["GDF"]].values.ravel()
-Target
-```
-
-```{python}
-Feature = data[["ET", "GDF_prev", "DF_prev"]]
-Feature.head()
-```
-
-Splitting data into training and testing sets
-
-```{python}
-X_train, X_test, y_train, y_test = train_test_split(Feature, Target, 
-test_size = 0.2, random_state = 666)
-```
-
-Training models
-
-```{python}
-knn_regressor = KNeighborsRegressor(n_neighbors = 5)
-knn_regressor.fit(X_train, y_train)
-knn_predictions = knn_regressor.predict(X_test)
-
-gb_regressor = GradientBoostingRegressor(n_estimators = 100, random_state = 666)
-gb_regressor.fit(X_train, y_train)
-gb_predictions = gb_regressor.predict(X_test)
-
-rf_regressor = RandomForestRegressor(n_estimators = 100, random_state = 666)
-rf_regressor.fit(X_train, y_train)
-rf_predictions = rf_regressor.predict(X_test)
-
-sv_regressor = SVR(kernel="rbf")
-sv_regressor.fit(X_train, y_train)
-sv_predictions = sv_regressor.predict(X_test)
-```
-
-Evaluating models
-
-```{python}
-knn_mse = mean_squared_error(y_test, knn_predictions)
-knn_r2 = r2_score(y_test, knn_predictions)
-print(f'KNeighborsRegressor MSE: {knn_mse}')
-print(f'KNeighborsRegressor R2: {knn_r2}')
-print()
-
-gb_mse = mean_squared_error(y_test, gb_predictions)
-gb_r2 = r2_score(y_test, gb_predictions)
-print(f'GradientBoostingRegressor MSE: {gb_mse}')
-print(f'GradientBoostingRegressor R2: {gb_r2}')
-print()
-
-rf_mse = mean_squared_error(y_test, rf_predictions)
-rf_r2 = r2_score(y_test, rf_predictions)
-print(f'RandomForestRegressor MSE: {rf_mse}')
-print(f'RandomForestRegressor R2: {rf_r2}')
-print()
-
-sv_mse = mean_squared_error(y_test, sv_predictions)
-sv_r2 = r2_score(y_test, sv_predictions)
-print(f'SupportVectorRegressor MSE: {sv_mse}')
-print(f'SupportVectorRegressor R2: {sv_r2}')
-```
-
-KNeighborsRegressor, GradientBoostingRegressor, RandomForestRegressor are 
-similarly accurateand SupportVectorRegressor is less accurate than 
-the former three.
-The GradientBoostingRegressor proved to be most accurate with a 
-slight upperhand. Let's train it again with more n_estimators
-
-```{python}
-final_model = GradientBoostingRegressor(n_estimators = 1000, random_state = 666)
-final_model.fit(X_train, y_train)
-final_predictions = final_model.predict(X_test)
-```
-
-Now let's create a scatter plot to demonstrate the results
-
-```{python}
-def plot_predictions(y_true, y_pred, title, fname):
-  plt.figure(figsize=(8, 8))
-  plt.scatter(y_true, y_pred, alpha = 0.5)
-  plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], "r--", 
-  lw = 2)
-  plt.xlabel("True (normalised) values")
-  plt.ylabel("Predicted (normalised) values")
-  plt.title(title)
-  plt.savefig(fname)
-```
-
-```{python}
-plot_predictions(y_test, final_predictions, "GDF predictions accuracy", 
-"GDFPredictions")
-```
-
-Displaying the image in RNotebook
 
 ```{r}
-img <- readPNG("GDFPredictions.png")
-grid.newpage()
-grid.raster(img)
+write.csv(data_to_save, "NormData.csv", row.names = FALSE)
+write.csv(data_to_save2, "StandData.csv", row.names = FALSE)
 ```
