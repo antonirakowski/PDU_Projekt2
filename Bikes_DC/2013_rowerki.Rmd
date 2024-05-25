@@ -17,7 +17,7 @@ help(wyodrebnij)
 help(czas)
 help(unormuj)
 help(correlation)
-help(sum)
+
 ```
 
 Reading and saving quarterly data from Washington bikes
@@ -148,6 +148,7 @@ plot(wynik3$casual,wynik3$Inne4, xlab = "Casuals",ylab="TRE")
 plot(wynik3$casual,wynik3$temperature_2m_max...C., xlab = "Casuals", ylab="Temperature")
 plot(wynik3$casual,wynik3$Inne2, xlab = "Casuals", ylab="Temperature * Radiation")
 plot(wynik3$casual,wynik3$Inne, xlab = "Casuals",ylab="Apparent Temperature * Radiation")
+
 ```
 
 

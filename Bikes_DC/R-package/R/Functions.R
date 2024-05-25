@@ -85,6 +85,7 @@ unormuj <- function(df, which = c(2, length(colnames(df))), check = TRUE, decima
 #'   wyodrebnij(df, what=c("%m"), newName=c("Month"))
 #'   #Extracting multiple data
 #'   wyodrebnij(df, name="Time", what=c("H","m"), newName=c("Hour","Month"))
+#' @seealso \link{czas} for changing time format in data frame
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
 #' @export
 
@@ -124,7 +125,7 @@ wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S"
 #' Whichx and whichy must be given. "High" parameter is working on absolutes do not give him negative values.
 #' Format of print might be odd for some of you, but it give you all information from value of correlation,
 #' to numbers of columns which were used to product this value.
-#' @seealso [cor()]  for more details about correlations
+#' @seealso \link{cor} for more details about correlations
 #' @examples
 #' #Find correlation beetwen columns from 5 to 9 and 8 to 19 with rank higher from 0.7
 #' correlation(df,c(1:5),c(8,19),high=0.7)

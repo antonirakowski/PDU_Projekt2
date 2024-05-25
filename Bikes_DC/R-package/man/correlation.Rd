@@ -41,5 +41,5 @@ correlation(df, c(1), c(2:length(colnames(df))), high= 0)
 Gagolewski M. (2024), Deep R Programming, Melbourne
 }
 \seealso{
-[cor()]  for more details about correlations
+\link{cor} for more details about correlations
 }
