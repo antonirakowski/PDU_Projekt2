@@ -11,10 +11,10 @@
 #'    Examples of usage with different parameters
 #'    czas(df, nameTo="NewDate", from="%Y-%d-%m %H:%M:%S",to ="%d-%m-%Y %H:%M:%S" )
 #'    czas(df, to = "%d-%m-%Y")
-#' @details This is generic function. Use to change format of time. 
+#' @details Use to change format of time. 
 #'   Remember to carefully copy existing format to from parameter to avoid getting all NA in column.
 #' @references Gagolewski M. (2024), Deep R Programming, Melbourne
-#' @seealso [wyodrebnij()] for extracting specific data from date.
+#' @seealso \link{wyodrebnij} for extracting specific data from date.
 #' @export
 
 czas <- function(df,nameFrom="Date",nameTo=nameFrom, from ="%Y-%m-%d %H:%M:%S" , to ="%d-%m-%Y %H:%M:%S" ){

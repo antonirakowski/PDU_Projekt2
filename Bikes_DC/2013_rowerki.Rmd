@@ -17,6 +17,7 @@ help(wyodrebnij)
 help(czas)
 help(unormuj)
 help(correlation)
+help(sum)
 ```
 
 Reading and saving quarterly data from Washington bikes

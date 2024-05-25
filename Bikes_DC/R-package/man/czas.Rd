@@ -30,7 +30,7 @@ Return a data frame with changed date format and/or column name.
 Function changes format of date in column
 }
 \details{
-This is generic function. Use to change format of time. 
+Use to change format of time. 
   Remember to carefully copy existing format to from parameter to avoid getting all NA in column.
 }
 \examples{
@@ -42,5 +42,5 @@ This is generic function. Use to change format of time.
 Gagolewski M. (2024), Deep R Programming, Melbourne
 }
 \seealso{
-[wyodrebnij()] for extracting specific data from date.
+\link{wyodrebnij} for extracting specific data from date.
 }
