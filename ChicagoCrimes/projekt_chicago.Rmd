@@ -3,89 +3,254 @@ output:
   pdf_document: default
   html_document: default
 ---
-```{r}
+```{r Importing the necessary libraries, warni}
+# Importing the necessary libraries
+
+library(dplyr)
+library(ggplot2)
+library(stringr)
+
+```
+
+```{r Preparing data, warning=FALSE}
+#Preperaing the data
+
 #Cleanup
 rm(list=ls())
 gc()
-#Preperaing the data
-library(dplyr)
 
 # Weather from chicago between 2000 and 2024 hourly
 weather <- read.csv("weather_chicago_2001_2023.csv")
 
 # Crimes from Chicago, from 2001 to 2023
 # Deleting unnesessary columns from crimes (location etc.)
-#crimes[,c(13:22)] <- NULL
+# crimes[,c(2,4,5,13:22)] <- NULL
+# compressed to gz using gzip
 # modified crimes without locations data
 crimes <- read.csv("crimes_chicago_mod.csv.gz")
 
-# Creating usefull columns, then join
 crimes <- crimes %>%
-  mutate(Date = format(as.POSIXct(Date, format = "%m/%d/%Y %I:%M:%S %p"), "%Y-%m-%dT%H:%M:%S"),
+  mutate(Date = format(as.POSIXct(Date, format = "%m/%d/%Y %I:%M:%S %p"), 
+                       "%Y-%m-%dT%H:%M:%S"),
          Hour = round((as.integer(substr(Date, 12, 13)) * 3600 +
                          as.integer(substr(Date, 15, 16)) * 60 +
-                         as.integer(substr(Date, 18, 19))) %/% 3600), #rouding time to just hour to match weather$time
-         Date = sprintf("%sT%02d%s",substr(Date, 1, 10), Hour, ":00")) %>% 
-  right_join(weather, by = join_by(Date==time))
+                         as.integer(substr(Date, 18, 19))) %/% 3600), 
+         #rouding time to just hour to match weather$time
+         Date = sprintf("%sT%02d%s",substr(Date, 1, 10), Hour, ":00")) %>%
+  rename(offense_category = Primary.Type, offense_description = Description)
+
+#View(crimes)
+# Creating usefull columns, then join
+crimes <- crimes %>% right_join(weather, by = join_by(Date==time))
 # right join, because for now it's better to keep the days when no crime happens
 ```
 
 
-```{r}
-# Differet types of crimes should be analised separately
+Crimes in Detroit
 
-count_list <- list()
-for(i in unique(crimes$Primary.Type)){
-  count_list[[i]] <- sum(crimes$Primary.Type == i, na.rm=TRUE)
-}
-count_list_sorted <- count_list[order(unlist(count_list), decreasing = TRUE)]
-types <- names(count_list_sorted)
-counts <- unlist(count_list_sorted)
-# Create a bar plot
+```{r Preparing the Detroit data, eval=FALSE, warning=FALSE, include=FALSE}
+weather <- read.csv("weather_detroit_2000_2024.csv", skip=3)
+#crimes_det <- read.csv("crimes_detroit.csv")
+#crimes_det[,c(1,2,4,5,9,10,12,16:25)] <- NULL
+#View(crimes_det)
+#write.csv(crimes_det, "crimes_detroit_mod.csv", row.names = FALSE)
+crimes <- read.csv("crimes_detroit_mod.csv.gz")
 
-barplot(counts, names.arg = types, las = 2, col = ifelse(counts<mean(counts),"red","skyblue"),
-        main = "Counts of Crime Types", xlab = "Crime Types", ylab = "Count")
+crimes <- crimes %>% rename(Date = incident_timestamp) %>%
+  mutate(Date = format(as.POSIXct(Date, 
+                        format = "%Y/%m/%d"), "%Y-%m-%d"),
+         Date = sprintf("%sT%02d%s", Date, hour_of_day, ":00"))
+
+crimes <- crimes %>% right_join(weather, by = join_by(Date==time))
 
 ```
 
 
-```{r}
+```{r Checking how many are there different crimes types}
+# Differet types of crimes should be analised separately
+
+count_list <- list()
+
+for(i in unique(crimes$offense_category)){
+  count_list[[i]] <- sum(crimes$offense_category == i, na.rm=TRUE)
+}
+count_list_sorted <- count_list[order(unlist(count_list), decreasing = TRUE)]
+types <- names(count_list_sorted)[1:20]
+counts <- unlist(count_list_sorted)[1:20]
+# Create a bar plot
+
+#barplot(counts, names.arg = types, las = 2, 
+#        col = ifelse(counts<mean(counts),"red","skyblue"),
+#        main = "Counts of Crime Types", xlab = "Crime Types", ylab = "Count")
+
+
+ggplot(as.data.frame(types, counts), aes(x = reorder(types, -counts), y = counts, fill = counts > mean(counts))) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("TRUE" = "skyblue", "FALSE" = "red")) +
+  labs(title = "Counts of Crime Types", x = "Crime Types", y = "Count") +
+  theme(axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1))+
+  theme(axis.title.y = element_text(angle = 0, vjust = 0.5, hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+
+```
+
+
+```{r Plotting correlation between different crime types and weather}
 #plotting for each crime type
+
+count_list <- list()
+
+for(i in unique(crimes$offense_category)){
+  count_list[[i]] <- sum(crimes$offense_category == i, na.rm=TRUE)
+}
+count_list_sorted <- count_list[order(unlist(count_list), decreasing = TRUE)]
+
 
 crime_types <- names(count_list_sorted)[1:20]
 
-number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), 
+                                    format = "%Y-%m-%d")$yday
 cut_min <- 0.05
-cut_max <- 1
-
+cut_max <- 0.95
+head(crimes$Date)
 for(crimeType in crime_types){
   df <- crimes %>%
-    mutate(Date = number_of_day_in_year %/% 14) %>%
-    filter(Primary.Type == crimeType) %>%
+    mutate(Date = number_of_day_in_year %/% 7) %>%
+    filter(offense_category == crimeType) %>%
     group_by(Date)%>%
     summarise(mean_temp = mean(temperature_2m...C.),
               mean_wind = mean(wind_speed_10m..km.h.),
               mean_precipitation = mean(precipitation..mm.),
               mean_cloud = mean(cloud_cover....),
               count = n()) %>%
-    filter(between(count, quantile(count, c(cut_min, cut_max))[[1]],quantile(count, c(cut_min, cut_max))[[2]])) %>%
-    filter(between(mean_temp, quantile(mean_temp, c(cut_min, cut_max))[[1]],quantile(mean_temp, c(cut_min, cut_max))[[2]]))
+    filter(between(count, quantile(count, c(cut_min, cut_max))[[1]],
+                   quantile(count, c(cut_min, cut_max))[[2]])) #%>%
+    #filter(between(mean_cloud, quantile(mean_cloud, c(cut_min, cut_max))[[1]], 
+    #               quantile(mean_cloud, c(cut_min, cut_max))[[2]]))
   
-  var_cor <- df$mean_temp
+  #var_cor <- df$mean_cloud
   
-  title <- sprintf("crime type: %s rows: %d cor = %f", 
-                   crimeType, dim(df)[1], cor(var_cor, df$count, method = "pearson"))
-  print(title)
-  if(dim(df)[1]!=0){
-    plot(var_cor, df$count,las=2, main = title, type="p", pch=16, col=rgb(0,0,0,0.3))
-    #plot(df$Date, df$count, main = paste(crimeType,"in year"), type="l", pch=16, col=rgb(0,0,0,0.3))
+  print("")
+  suma_cor = as.integer(0)
+  for(j in colnames(df)[2:5]){
+    df <- df %>% 
+    filter(between(.data[[j]], quantile(.data[[j]], c(cut_min, cut_max))[[1]], 
+                   quantile(.data[[j]], c(cut_min, cut_max))[[2]]))
+    title <- sprintf("crime type: %s - %s rows: %d cor = %f", 
+                     crimeType, j, dim(df)[1], 
+                     cor(df[j], df$count, method = "pearson"))
+    suma_cor = suma_cor + abs(cor(df[j], df$count, method = "pearson"))
+    print(title)
+    if(nrow(df)!=0){
+      #plot(var_cor, df$count,las=2, main = title, 
+      #     type="p", pch=16, col=rgb(0,0,0,0.3))
+      #ggplot(as.data.frame(var_cor, df$count), aes(x = var_cor, y = df$count)) +
+      #  geom_point(shape = 16, color = rgb(0, 0, 0, 0.5)) +
+      #  labs(title = title, x = "var_cor", y = "Count") +
+      #  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      #plot(df$Date, df$count, main = paste(crimeType,"in year"), 
+      #    type="l", pch=16, col=rgb(0,0,0,0.3))
+      
+      p <- ggplot(df, aes(x = .data[[j]], y = count)) +
+        geom_point(shape = 16, color = rgb(0, 0, 0, 0.5)) +
+        labs(title = title, x = j, y = "Count") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      print(p)  # Explicitly print the plot
+      
+      # Optional: Create a time series plot
+      #p_time_series <- ggplot(df, aes(x = Date, y = count)) +
+      #  geom_line(color = rgb(0, 0, 0, 0.5)) +
+      #  labs(title = paste(crimeType, "in Year"), x = "Day of the Year", y = "Count")
+      #print(p_time_series) 
+      
+    }
+  }
+  print(suma_cor/4)
+  
+}
+```
+
+```{r Plotting correlation between different crime types and weather V2, eval=FALSE, include=FALSE}
+#plotting for each crime type
+
+count_list <- list()
+
+for(i in unique(crimes$offense_category)[1:5]){
+  count_list[[i]] <- sum(crimes$offense_category == i, na.rm=TRUE)
+}
+count_list_sorted <- count_list[order(unlist(count_list), decreasing = TRUE)]
+
+
+crime_types <- names(count_list_sorted)[1:20]
+
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), 
+                                    format = "%Y-%m-%d")$yday
+cut_min <- 0.05
+cut_max <- 0.95
+for(crimeType in crime_types){
+  df <- crimes %>%
+      #mutate(Date = number_of_day_in_year) %>%
+      filter(offense_category == crimeType)
+  
+  print("")
+  for(j in colnames(crimes)[11:20]){
+    
+    #View(df)
+    #colnames(df) 
+    
+    df_summary <- df %>%
+      group_by(.data[[j]]) %>%
+      summarise(count = n()) #%>%
+    weather_summary <- weather %>%
+      group_by(.data[[j]]) %>%
+      summarise(count = n())
+    plot(weather_summary)
+    df_summary <- inner_join(df_summary, weather_summary, by = j) %>%
+      mutate(count.x = count.x/count.y) %>%
+      rename(count = count.x)
+    
+    
+    #df_summary <- aggregate(df[[j]], by = list(df[[j]]), 
+    #                      FUN = function(x) sum(!is.na(x)) / length(x))
+    # Rename the columns for clarity
+    #colnames(df_summary) <- c(j, "count")
+    
+    #filter(between(count, quantile(count, c(cut_min, cut_max))[[1]],
+    #               quantile(count, c(cut_min, cut_max))[[2]]))%>% 
+    #filter(between(.data[[j]], quantile(.data[[j]], c(cut_min, cut_max))[[1]], 
+    #               quantile(.data[[j]], c(cut_min, cut_max))[[2]]))
+    
+    if(nrow(df)!=0){
+      #plot(var_cor, df$count,las=2, main = title, 
+      #     type="p", pch=16, col=rgb(0,0,0,0.3))
+      #ggplot(as.data.frame(var_cor, df$count), aes(x = var_cor, y = df$count)) +
+      #  geom_point(shape = 16, color = rgb(0, 0, 0, 0.5)) +
+      #  labs(title = title, x = "var_cor", y = "Count") +
+      #  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+      #plot(df$Date, df$count, main = paste(crimeType,"in year"), 
+      #    type="l", pch=16, col=rgb(0,0,0,0.3))
+      
+      title <- sprintf("crime type: %s - %s rows: %d cor = %f", 
+                     crimeType, j, nrow(df_summary), 
+                     cor(df_summary[[j]], df_summary$count, method = "pearson"))
+      print(title)
+      
+      # Generate scatter plot
+      p <- ggplot(df_summary, aes(x = .data[[j]], y = count)) +
+        geom_point(shape = 16, color = rgb(0, 0, 0, 0.5)) +
+        labs(title = title, x = j, y = "Count") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+      print(p)  # Explicitly print the plot
+    
+    }
   }
 }
 ```
 
-Testing NARCOTICS
 
-```{r}
+
+```{r Analysing Narcotics crimes}
 
 number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
 cut_min <- 0.05
@@ -93,12 +258,14 @@ cut_max <- 0.95
 
 crimeType <- "NARCOTICS"
 
-library(stringr)
+print(unique(unlist(crimes %>% filter(offense_category == crimeType) %>% select(offense_description))))
+
 
 crimes <- crimes %>%
   mutate(Description = case_when(
     Primary.Type == crimeType & str_detect(Description, "POSS") ~ "POSSESS",
-    Primary.Type == crimeType & (str_detect(Description, "DELIVER") | str_detect(Description, "MANU")) ~ "MANU/DELIVER",
+    Primary.Type == crimeType & ( str_detect(Description, "DELIVER") | 
+         str_detect(Description, "MANU")) ~ "MANU/DELIVER",
     TRUE ~ Description
   ))
 
@@ -154,17 +321,20 @@ df_Other <- crimes %>%
                    quantile(mean_temp, c(cut_min, cut_max))[[2]]))
 
 title <- sprintf("Different NARCOTICS crimes cor1 = %f cor2 = %f cor3 = %f", 
-                 cor(df_Possess$mean_temp, df_Possess$count, method = "pearson"),
-                 cor(df_ManuDeliver$mean_temp, df_ManuDeliver$count, method = "pearson"),
-                 cor(df_Other$mean_temp, df_Other$count, method = "pearson"))
+         cor(df_Possess$mean_temp, df_Possess$count, method = "pearson"),
+         cor(df_ManuDeliver$mean_temp, df_ManuDeliver$count, method = "pearson"),
+         cor(df_Other$mean_temp, df_Other$count, method = "pearson"))
 
 print(title)
 
 
 
-plot(df_Possess$mean_temp, df_Possess$count, main = title, type="p", pch=16, col=rgb(1,0,0,1))
-#lines(df_Possess$mean_temp, df_ManuDeliver$count, main = title, type="p", pch=16, col=rgb(0,0,1,1))
-#lines(df_Possess$mean_temp, df_Other$count, main = title, type="p", pch=16, col=rgb(0,1,0,1))
+plot(df_Possess$mean_temp, df_Possess$count, main = title, 
+     type="p", pch=16, col=rgb(1,0,0,1))
+#lines(df_Possess$mean_temp, df_ManuDeliver$count, main = title, 
+#     type="p", pch=16, col=rgb(0,0,1,1))
+#lines(df_Possess$mean_temp, df_Other$count, main = title, 
+#    type="p", pch=16, col=rgb(0,1,0,1))
 
 # do poprawy?
 #ggplot(data.frame(df_Possess$count, df_ManuDeliver$count, df_Possess$Date))
@@ -172,22 +342,23 @@ plot(df_Possess$mean_temp, df_Possess$count, main = title, type="p", pch=16, col
 
 
 
-Testing HOMICIDEs
+```{r Analysing homicide crimes}
 
-```{r}
-
-number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), format = "%Y-%m-%d")$yday
+number_of_day_in_year <- as.POSIXlt(substr(crimes$Date,1,10), 
+                                    format = "%Y-%m-%d")$yday
 cut_min <- 0.05
 cut_max <- 1
 
 crimeType <- "HOMICIDE"
 
-print(unique(unlist(crimes %>% filter(Primary.Type == crimeType) %>% select(Description))))
+print(unique(unlist(crimes %>% 
+                      filter(offense_category == crimeType) %>% 
+                      select(offense_description))))
 
 df_Homicide <- crimes %>%
-    mutate(Date = number_of_day_in_year %/% 14) %>%
-    filter(Primary.Type == crimeType) %>%
-    filter(Description == "FIRST DEGREE MURDER") %>%
+    mutate(Date = number_of_day_in_year %/% 7) %>%
+    filter(offense_category == crimeType) %>%
+    filter(offense_description == "FIRST DEGREE MURDER") %>%
     group_by(Date)%>%
     summarise(mean_temp = mean(temperature_2m...C.),
               mean_wind = mean(wind_speed_10m..km.h.),
@@ -198,15 +369,15 @@ df_Homicide <- crimes %>%
               count = n()) %>%
     filter(between(count, 
                    quantile(count, c(cut_min, cut_max))[[1]], 
-                   quantile(count, c(cut_min, cut_max))[[2]])) %>%
-    filter(
-      between(mean_temp, quantile(mean_temp, c(cut_min, cut_max))[1], quantile(mean_temp, c(cut_min, cut_max))[2]) &
-      between(mean_wind, quantile(mean_wind, c(cut_min, cut_max))[1], quantile(mean_wind, c(cut_min, cut_max))[2]) &
+                   quantile(count, c(cut_min, cut_max))[[2]]))# %>%
+    #filter(
+    #  between(mean_temp, quantile(mean_temp, c(cut_min, cut_max))[1], quantile(mean_temp, c(cut_min, cut_max))[2]) &
+    #  between(mean_wind, quantile(mean_wind, c(cut_min, cut_max))[1], quantile(mean_wind, c(cut_min, cut_max))[2]) &
       #between(mean_precipitation, quantile(mean_precipitation, c(cut_min, cut_max))[1], quantile(mean_precipitation, c(cut_min, cut_max))[2]) &
-      between(mean_cloud, quantile(mean_cloud, c(cut_min, cut_max))[1], quantile(mean_cloud, c(cut_min, cut_max))[2]) 
+    #  between(mean_cloud, quantile(mean_cloud, c(cut_min, cut_max))[1], quantile(mean_cloud, c(cut_min, cut_max))[2]) 
       #& between(mean_humidity, quantile(mean_humidity, c(cut_min, cut_max))[1], quantile(mean_humidity, c(cut_min, cut_max))[2]) &
-      #between(mean_sur_pressure, quantile(mean_sur_pressure, c(cut_min, cut_max))[1], quantile(mean_sur_pressure, c(cut_min, cut_max))[2])
-  )
+      #between(mean_sur_pressure, quantile(mean_sur_pressure, c(cut_min, cut_max))[1], quantile(mean_sur_pressure, c(cut_min, cut_max))[2]))
+
 
 # Normalizing 
 normalize <- function(x) {
@@ -215,18 +386,24 @@ normalize <- function(x) {
 
 df_Homicide_normalized <- as.data.frame(lapply(df_Homicide, normalize))
 df_Homicide_standardized <- scale(df_Homicide)
-write.csv(df_Homicide_normalized, "df_Homicide_normalized.csv", row.names = FALSE)
-write.csv(df_Homicide_standardized, "df_Homicide_standardized.csv", row.names = FALSE)
+write.csv(df_Homicide_normalized, 
+          "df_Homicide_normalized.csv", row.names = FALSE)
+write.csv(df_Homicide_standardized, 
+          "df_Homicide_standardized.csv", row.names = FALSE)
 
-dim(df_Homicide)
+
 for (i in colnames(df_Homicide_normalized)[2:4]){
   title <- sprintf("%s:%s | %s , cor = %f", 
                    crimeType, "FIRST DEGREE MURDER", i, 
                  cor(df_Homicide_normalized[i], df_Homicide_normalized$count, method = "pearson"))
-  print(title)
-  plot(df_Homicide_normalized[[i]], df_Homicide_normalized$count, 
-       las=2, main = title, type="p", pch=16, col=rgb(0,0,0,0.3))
+  print(paste(title," rows:", dim(df_Homicide)[1]))
+  
+  p<-ggplot(df_Homicide_normalized, aes(x = .data[[i]], y = count)) +
+  geom_point(color = rgb(0,0,0,0.5), shape = 16) +
+  labs(title = title, x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 1)) # Adjust axis text angle if needed
+  print(p)
+  
 }
-
 
 ```
