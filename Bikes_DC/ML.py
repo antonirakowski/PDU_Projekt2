@@ -53,6 +53,6 @@ def plot_predictions(y_true, y_pred, title, fname):
   plt.title(title)
   plt.savefig(fname)
 
-plot_predictions(y_ftest,predictionsG,"Cokolwiek", "PlotG")
-plot_predictions(y_ftest,predictionsL,"Cokolwiek", "PlotL")
-plot_predictions(y_ftest,predictionsS,"Cokolwiek", "PlotS")
+plot_predictions(y_ftest,predictionsG,"Gradient Predictions", "PlotG")
+plot_predictions(y_ftest,predictionsL,"Linear Predictions", "PlotL")
+plot_predictions(y_ftest,predictionsS,"SVR Predictions", "PlotS")
