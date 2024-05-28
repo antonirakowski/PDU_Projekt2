@@ -151,6 +151,8 @@ p4 <- ggplot(wynik, aes(x = casual, y = temperature_2m_max...C., color = shortwa
        y = "Temperature") + # Label for y-axis
   theme_classic() +
   scale_color_gradient(low = "red", high = "blue")
+
+#Będę wypisywał po kolei bo z użcyiem grida wykresy na siebie najeżdzają tworząc bardzo brzydki efekt
 p1
 p2
 p3
