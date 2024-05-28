@@ -9,8 +9,8 @@ Loading used libraries. Devtools used to load "R-package" my own small package m
 library(dplyr)
 library(stringr)
 library(devtools)
+library(ggplot2)
 load_all("R-package")
-
 ```
 ```{r Helps, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 help(wyodrebnij)
@@ -112,13 +112,51 @@ correlation(wynik,c(2,3),c(4:28),high=0.7)
 Let's plot those columns in order to find more correlation inside data.
 
 ```{r Plot1}
-par(mfrow = c(2, 3))
-plot(wynik$casual,wynik$et0_fao_evapotranspiration..mm., xlab = "Casuals", ylab="Evap")
-plot(wynik$casual,wynik$temperature_2m_max...C., xlab = "Casuals", ylab="Temperature")
-plot(wynik$casual,wynik$shortwave_radiation_sum..MJ.m.., xlab = "Casuals", ylab="Radiation")
-plot(wynik$casual,wynik$Inne, xlab = "Casuals", ylab="Apparent Temperature * Radiation")
-plot(wynik$casual,wynik$Inne2, xlab = "Casuals", ylab="Temperature * Radiation")
-plot(wynik$casual,wynik$Inne4, xlab = "Casuals",ylab="TRE")
+p1 <- ggplot(wynik, aes(x = casual, y = temperature_2m_max...C.)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and temperature", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temperature") + # Label for y-axis
+  theme_bw()
+p2 <- ggplot(wynik, aes(x = casual, y = shortwave_radiation_sum..MJ.m..)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and radiation", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Radiation") + # Label for y-axis
+  theme_bw()
+
+
+p3 <- ggplot(wynik, aes(x = casual, y = et0_fao_evapotranspiration..mm.)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and evapotranspiration", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Evapotranspiration") + # Label for y-axis
+  theme_bw()
+p5 <- ggplot(wynik, aes(x = casual, y = Inne)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation") + # Label for y-axis
+  theme_bw()
+p6 <- ggplot(wynik, aes(x = casual, y = Inne2)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation * Evap", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation *Evap") + # Label for y-axis
+  theme_bw()
+p4 <- ggplot(wynik, aes(x = casual, y = temperature_2m_max...C., color = shortwave_radiation_sum..MJ.m..)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and temperature", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temperature") + # Label for y-axis
+  theme_classic() +
+  scale_color_gradient(low = "red", high = "blue")
+p1
+p2
+p3
+p4
+p5
+p6
 ```
 As we can see days with more than around 2400 casual bikers tend to be different than most day of the year. Let's eliminate them.
 ```{r Correlation3}
@@ -129,11 +167,51 @@ correlation(wynik1,c(2,3),c(4:28),high=0.75, method="spearman")
 Let's normalize data in second data frame
 ```{r Plot2}
 wynik2 <- unormuj(wynik1,which = c(2:28),check=FALSE,decimals = 7)
-par(mfrow = c(2, 2))
-plot(wynik2$casual,wynik2$Inne4, xlab = "Casuals",ylab="TRE")
-plot(wynik2$casual,wynik2$temperature_2m_max...C., xlab = "Casuals", ylab="Temperature")
-plot(wynik2$casual,wynik2$Inne2, xlab = "Casuals", ylab="Temperature * Radiation")
-plot(wynik2$casual,wynik2$Inne, xlab = "Casuals",ylab="Apparent Temperature * Radiation")
+p1 <- ggplot(wynik2, aes(x = casual, y = temperature_2m_max...C.)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and temperature", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temperature") + # Label for y-axis
+  theme_bw()
+p2 <- ggplot(wynik2, aes(x = casual, y = shortwave_radiation_sum..MJ.m..)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and radiation", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Radiation") + # Label for y-axis
+  theme_bw()
+
+
+p3 <- ggplot(wynik2, aes(x = casual, y = et0_fao_evapotranspiration..mm.)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and evapotranspiration", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Evapotranspiration") + # Label for y-axis
+  theme_bw()
+p5 <- ggplot(wynik2, aes(x = casual, y = Inne)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation") + # Label for y-axis
+  theme_bw()
+p6 <- ggplot(wynik2, aes(x = casual, y = Inne2)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation * Evap", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation *Evap") + # Label for y-axis
+  theme_bw()
+p4 <- ggplot(wynik2, aes(x = casual, y = temperature_2m_max...C., color = shortwave_radiation_sum..MJ.m..)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and temperature", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temperature") + # Label for y-axis
+  theme_classic() +
+  scale_color_gradient(low = "red", high = "blue")
+p1
+p2
+p3
+p4
+p5
+p6
 ```
 
 
@@ -143,17 +221,33 @@ correlation(wynik1,c(2,3),c(4:28),high=0.75, method="spearman")
 Let's standarize data in 3 data frame
 ```{r Plot3}
 wynik3<-as.data.frame(sapply(wynik1[,-1], function(data) (data-mean(data))/sd(data)))
-par(mfrow = c(2, 2))
-plot(wynik3$casual,wynik3$Inne4, xlab = "Casuals",ylab="TRE")
-plot(wynik3$casual,wynik3$temperature_2m_max...C., xlab = "Casuals", ylab="Temperature")
-plot(wynik3$casual,wynik3$Inne2, xlab = "Casuals", ylab="Temperature * Radiation")
-plot(wynik3$casual,wynik3$Inne, xlab = "Casuals",ylab="Apparent Temperature * Radiation")
+p1 <- ggplot(wynik3, aes(x = casual, y = temperature_2m_max...C.)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and temperature", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temperature") + # Label for y-axis
+  theme_bw()
+p2 <- ggplot(wynik3, aes(x = casual, y = Inne)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation") + # Label for y-axis
+  theme_bw()
+p3 <- ggplot(wynik3, aes(x = casual, y = Inne2)) + 
+  geom_point() + # Add points
+  labs(title = "Correlation of casual riders and Temp * Radiation * Evap", # Add title
+       x = "Casuals", # Label for x-axis
+       y = "Temp * Radiation *Evap") + # Label for y-axis
+  theme_bw()
+p1
+p2
+p3
 
 ```
 
 
 
 ```{r CorrelationSTD}
-correlation(wynik3,c(2,3),c(4:28),high=0.75, method="spearman")
+correlation(wynik3,c(1,2),c(4:27),high=0.75, method="spearman")
 ```
 
