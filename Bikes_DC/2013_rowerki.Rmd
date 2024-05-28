@@ -208,12 +208,7 @@ p4 <- ggplot(wynik2, aes(x = casual, y = temperature_2m_max...C., color = shortw
        y = "Temperature") + # Label for y-axis
   theme_classic() +
   scale_color_gradient(low = "red", high = "blue")
-p1
-p2
-p3
-p4
-p5
-p6
+#Nie wyświetlam są zapisane w pamięci ale wyglądają takk samo jak nieunormowane (zmienia się tylko przedział danych)
 ```
 
 
