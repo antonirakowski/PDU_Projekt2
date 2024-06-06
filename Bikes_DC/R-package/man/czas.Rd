@@ -19,9 +19,9 @@ czas(
 
 \item{to}{End date format.}
 
-\item{namesFrom}{Name of column in which we want to change date. Default "Date"}
+\item{namesFrom}{Name of column in which we want to change date. In default "Date"}
 
-\item{namesTo}{Name of our column at the end of process. Default we do not change name.}
+\item{namesTo}{Name of our column at the end of process. In default we do not change name.}
 }
 \value{
 Return a data frame with changed date format and/or column name.

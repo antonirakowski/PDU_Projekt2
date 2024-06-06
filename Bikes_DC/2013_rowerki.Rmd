@@ -26,7 +26,7 @@ All needed csv-s in zip folder.
 Q1 <- read.csv("2013Q1-capitalbikeshare-tripdata.csv")
 Q2 <- read.csv("2013Q2-capitalbikeshare-tripdata.csv")
 Q3 <- read.csv("2013Q3-capitalbikeshare-tripdata.csv")
-Q4 <-read.csv("2013Q4-capitalbikeshare-tripdata.csv")
+Q4 <- read.csv("2013Q4-capitalbikeshare-tripdata.csv")
 ```
 Extracting month and year from every dataset to group by day.
 Making two separate frames for "Members" and "Casual" users.
@@ -37,7 +37,7 @@ Q1 <- wyodrebnij(Q1,name="Start.date",from="%Y-%m-%d",what = c("%d","%m")
 Q1 <- Q1 %>% group_by(Day,Month) %>% count(Member.type) %>% 
   mutate(Data = paste("2013",Month,Day,sep="-"))
 casual <- Q1[Q1$Member.type=="Casual",]
-registere <<- Q1[Q1$Member.type=="Member",]
+registered <<- Q1[Q1$Member.type=="Member",]
 ```
 
 ```{r Q2}
@@ -46,7 +46,7 @@ Q2 <- wyodrebnij(Q2,name="Start.date",from="%Y-%m-%d",what = c("%d","%m")
 Q2 <- Q2 %>% group_by(Day,Month) %>% count(Member.type) %>% 
   mutate(Data = paste("2013",Month,Day,sep="-"))
 casual1 <- Q2[Q2$Member.type=="Casual",]
-registere1 <- Q2[Q2$Member.type=="Member",]
+registered1 <- Q2[Q2$Member.type=="Member",]
 ```
 
 ```{r Q3}
@@ -55,7 +55,7 @@ Q3 <- wyodrebnij(Q3,name="Start.date",from="%Y-%m-%d",what = c("%d","%m")
 Q3 <- Q3 %>% group_by(Day,Month) %>% count(Member.type)  %>% 
   mutate(Data = paste("2013",Month,Day,sep="-"))
 casual2 <- Q3[Q3$Member.type=="Casual",]
-registere2 <- Q3[Q3$Member.type=="Member",]
+registered2 <- Q3[Q3$Member.type=="Member",]
 ```
 
 ```{r Q4}
@@ -64,18 +64,21 @@ Q4 <- wyodrebnij(Q4,name="Start.date",from="%Y-%m-%d",what = c("%d","%m")
 Q4 <- Q4 %>% group_by(Day,Month) %>% count(Member.type) %>% 
   mutate(Data = paste("2013",Month,Day,sep="-"))
 casual3 <- Q4[Q4$Member.type=="Casual",]
-registere3 <- Q4[Q4$Member.type=="Member",]
+registered3 <- Q4[Q4$Member.type=="Member",]
 ```
 
 Merging all data from year 2013
 
 ```{r Types}
 casuals<-rbind(casual,casual1,casual2,casual3)
-registered<-rbind(registere,registere1,registere2,registere3)
+registered<-rbind(registered,registered1,registered2,registered3)
+head(casual)
+head(registered)
 ```
 Reading and saving weather data from Washington 2013
 ```{r Weather}
 pogoda2013 <- read.csv("2013_DC.csv",skip=3)
+head(pogoda2013)
 ```
 Small aestethic changes and joining weather and bike data
 ```{r Merge}
@@ -247,4 +250,3 @@ p3
 ```{r CorrelationSTD}
 correlation(wynik3,c(1,2),c(4:27),high=0.75, method="spearman")
 ```
-

@@ -1,9 +1,8 @@
-
 #' Change date format
 #' @description Function changes format of date in column
 #' @param df Main data frame
-#' @param namesFrom Name of column in which we want to change date. Default "Date"
-#' @param namesTo Name of our column at the end of process. Default we do not change name.
+#' @param namesFrom Name of column in which we want to change date. In default "Date"
+#' @param namesTo Name of our column at the end of process. In default we do not change name.
 #' @param from Start date format.
 #' @param to End date format.
 #' @return Return a data frame with changed date format and/or column name.
@@ -69,7 +68,7 @@ unormuj <- function(df, which = c(2, length(colnames(df))), check = TRUE, decima
 #'
 #' Extracting given part of date and making new column with those values. 
 #' @param df Main data frame
-#' @param name Name of column with date.Default "Date".
+#' @param name Name of column with date.In default "Date".
 #' @param what Part of date to be extracted .
 #' @param from Format of date in name column.
 #' @param new Boolean, if FALSE name column will be overwriten.
@@ -111,7 +110,7 @@ wyodrebnij <- function(df,name = "Date", what= c("%H"), from="%d-%m-%Y %H:%M:%S"
   }
 }
 
-#' Checking correlation beetwen x and y columns
+#' Checking correlation beetwen some x and some y columns
 #'
 #' Function checks correlation beetwen given number of columns
 #' @param df Main data frame

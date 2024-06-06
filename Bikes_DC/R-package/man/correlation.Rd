@@ -2,7 +2,7 @@
 % Please edit documentation in R/Functions.R
 \name{correlation}
 \alias{correlation}
-\title{Checking correlation beetwen x and y columns}
+\title{Checking correlation beetwen some x and some y columns}
 \usage{
 correlation(df, whichx, whichy, method = "spearman", high = 0.01, ...)
 }

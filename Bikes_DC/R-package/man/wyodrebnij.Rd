@@ -16,7 +16,7 @@ wyodrebnij(
 \arguments{
 \item{df}{Main data frame}
 
-\item{name}{Name of column with date.Default "Date".}
+\item{name}{Name of column with date.In default "Date".}
 
 \item{what}{Part of date to be extracted .}
 
@@ -45,4 +45,7 @@ Changing "new" parameter is not recommended.
 }
 \references{
 Gagolewski M. (2024), Deep R Programming, Melbourne
+}
+\seealso{
+\link{czas} for changing time format in data frame
 }
